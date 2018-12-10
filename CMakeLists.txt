@@ -23,8 +23,9 @@ find_package(catkin REQUIRED
     ${PACKAGE_DEPENDENCIES}
 )
 
-## Find system libraries
+## System dependencies are found with CMake's conventions
 find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io)
 
 ###################################
 ## catkin specific configuration ##
@@ -55,7 +56,9 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  ${PCL_LIBRARY_DIRS}
 )
+add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a cpp library
 add_library(${PROJECT_NAME}_core
@@ -76,6 +79,7 @@ target_link_libraries(${PROJECT_NAME}_core
 target_link_libraries(${PROJECT_NAME}
   ${PROJECT_NAME}_core
   ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
 )
 
 #############
