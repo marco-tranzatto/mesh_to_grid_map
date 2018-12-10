@@ -6,6 +6,7 @@
 #include <grid_map_msgs/GridMap.h>
 #include <grid_map_pcl/GridMapPclConverter.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include <mesh_to_grid_map/mesh_to_grid_map_converter.hpp>
 
 namespace mesh_to_grid_map {
 
@@ -18,11 +19,16 @@ MeshToGridMapConverter::MeshToGridMapConverter(ros::NodeHandle nh,
       latch_grid_map_pub_(kDefaultLatchGridMapPub),
       save_to_rosbag_on_publish_(kDefaultSaveToRosBagOnPublish),
       rosbag_topic_name_(kDefaultRosbagTopicName),
-      verbose_(kDefaultVerbose) {
+      verbose_(kDefaultVerbose),
+      load_mesh_on_startup_ (kDefaultLoadMeshOnStartup),
+      mesh_to_load_file_name_ (kDefaultMeshToLoadFileNamePLY) {
   // Initial interaction with ROS
   subscribeToTopics();
   advertiseTopics();
   getParametersFromRos();
+  if (load_mesh_on_startup_) {
+    loadMeshOnStartup();
+  }
 }
 
 void MeshToGridMapConverter::subscribeToTopics() {
@@ -49,6 +55,12 @@ void MeshToGridMapConverter::getParametersFromRos() {
   nh_private_.param("rosbag_topic_name", rosbag_topic_name_,
                     rosbag_topic_name_);
   nh_private_.param("verbose", verbose_, verbose_);
+  nh_private_.param("load_mesh_on_startup", load_mesh_on_startup_,
+                    load_mesh_on_startup_);
+  nh_private_.param("mesh_to_load_file_path", mesh_to_load_file_path_,
+                    mesh_to_load_file_path_);
+  nh_private_.param("mesh_to_load_file_name", mesh_to_load_file_name_,
+                    mesh_to_load_file_name_);
 }
 
 void MeshToGridMapConverter::meshCallback(
@@ -128,5 +140,21 @@ bool MeshToGridMapConverter::saveGridmap(const grid_map::GridMap& map) {
   return true;
 }
 
+bool MeshToGridMapConverter::loadMeshOnStartup() {
+  // Load the mesh
+  if (!mesh_to_load_file_path_.empty()) {
+    pcl::PolygonMesh mesh_from_file;
+    //pcl::io::loadPolygonFilePLY (mesh_to_load_file_path_ + mesh_to_load_file_name_, mesh_from_file); TODO
+    if (verbose_) {
+      ROS_INFO_STREAM(
+          "Loaded the mesh from file: " << mesh_to_load_file_path_);
+    }
+  } else {
+    ROS_ERROR(
+        "No mesh filepath specified (as ros param \"mesh_to_load_file_path\"");
+    return false;
+  }
+  return true;
+}
 
 }  // namespace mesh_to_grid_map
