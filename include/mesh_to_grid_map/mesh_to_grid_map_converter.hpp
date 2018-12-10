@@ -19,6 +19,8 @@ constexpr bool kDefaultLatchGridMapPub = true;
 constexpr bool kDefaultSaveToRosBagOnPublish = false;
 static const std::string kDefaultRosbagTopicName = "grid_map";
 constexpr bool kDefaultVerbose = false;
+constexpr bool kDefaultLoadMeshOnStartup = false;
+static const std::string kDefaultMeshToLoadFileNamePLY = "mesh.ply";
 
 class MeshToGridMapConverter {
 
@@ -40,6 +42,9 @@ private:
 
   // Saves the grid map
   bool saveGridmap(const grid_map::GridMap& map);
+
+  // Load mesh on startup
+  bool loadMeshOnStartup();
 
   // Node Handles
   ros::NodeHandle nh_;
@@ -69,6 +74,11 @@ private:
   bool save_to_rosbag_on_publish_;
   std::string rosbag_file_path_;
   std::string rosbag_topic_name_;
+
+  // Load mesh parameters
+  bool load_mesh_on_startup_;
+  std::string mesh_to_load_file_path_;
+  std::string mesh_to_load_file_name_;
 
 };
 
