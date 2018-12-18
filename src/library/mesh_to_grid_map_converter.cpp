@@ -8,6 +8,7 @@
 #include <grid_map_msgs/GridMap.h>
 #include <grid_map_pcl/GridMapPclConverter.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include <mesh_to_grid_map/mesh_to_grid_map_converter.hpp>
 
 namespace mesh_to_grid_map {
 
@@ -22,7 +23,8 @@ MeshToGridMapConverter::MeshToGridMapConverter(ros::NodeHandle nh,
       save_to_rosbag_on_publish_(kDefaultSaveToRosBagOnPublish),
       rosbag_topic_name_(kDefaultRosbagTopicName),
       load_mesh_on_startup_ (kDefaultLoadMeshOnStartup),
-      mesh_to_load_file_name_ (kDefaultMeshToLoadFileNamePLY) {
+      mesh_to_load_file_name_ (kDefaultMeshToLoadFileNamePLY),
+      frame_id_mesh_loaded_ (kDefaultFrameIdMeshLoaded) {
   // Initial interaction with ROS
   subscribeToTopics();
   advertiseTopics();
@@ -62,6 +64,8 @@ void MeshToGridMapConverter::getParametersFromRos() {
                     mesh_to_load_file_path_);
   nh_private_.param("mesh_to_load_file_name", mesh_to_load_file_name_,
                     mesh_to_load_file_name_);
+  nh_private_.param("frame_id_mesh_loaded", frame_id_mesh_loaded_,
+                    frame_id_mesh_loaded_);
 }
 
 void MeshToGridMapConverter::meshCallback(
@@ -69,14 +73,18 @@ void MeshToGridMapConverter::meshCallback(
   if (verbose_) {
     ROS_INFO("Mesh received, starting conversion.");
   }
-
   // Converting from message to an object
   pcl::PolygonMesh polygon_mesh;
   pcl_conversions::toPCL(mesh_msg, polygon_mesh);
+  meshToGridMap(polygon_mesh, mesh_msg.header.frame_id, mesh_msg.header.stamp.toNSec());
 
+}
+
+bool MeshToGridMapConverter::meshToGridMap(const pcl::PolygonMesh &polygon_mesh, const std::string &mesh_frame_id,
+                                           const uint64_t& time_stamp_nano_seconds) {
   // Creating the grid map
   grid_map::GridMap map;
-  map.setFrameId(mesh_msg.header.frame_id);
+  map.setFrameId(mesh_frame_id);
 
   // Creating the converter
   grid_map::GridMapPclConverter grid_map_pcl_converter;
@@ -94,7 +102,7 @@ void MeshToGridMapConverter::meshCallback(
   }
 
   // Publish grid map.
-  map.setTimestamp(mesh_msg.header.stamp.toNSec());
+  map.setTimestamp(time_stamp_nano_seconds);
   grid_map_msgs::GridMap message;
   grid_map::GridMapRosConverter::toMessage(map, message);
 
@@ -111,7 +119,10 @@ void MeshToGridMapConverter::meshCallback(
 
   // Saving the gridmap to the object
   last_grid_map_ptr_.reset(new grid_map::GridMap(map));
+
+  return true;
 }
+
 
 bool MeshToGridMapConverter::saveGridMapCallback(
     std_srvs::Empty::Request& request, std_srvs::Empty::Response& response) {
@@ -150,12 +161,17 @@ bool MeshToGridMapConverter::loadMeshOnStartup() {
       ROS_INFO_STREAM(
           "Loaded the mesh from file: " << mesh_to_load_file_path_);
     }
+    bool mesh_converted = meshToGridMap(mesh_from_file, frame_id_mesh_loaded_, ros::Time::now().toNSec());
+    if (!mesh_converted) {
+      ROS_ERROR("It was not possible to convert loaded mesh to grid_map object.");
+      return false;
+    }
   } else {
     ROS_ERROR(
         "No mesh filepath specified (as ros param \"mesh_to_load_file_path\"");
     return false;
   }
+
   return true;
 }
-
 }  // namespace mesh_to_grid_map

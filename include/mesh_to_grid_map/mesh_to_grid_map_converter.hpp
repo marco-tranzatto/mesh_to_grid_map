@@ -2,6 +2,7 @@
 #define MESH_TO_GRID_MAP_CONVERTER_H
 
 #include <string>
+#include <pcl/PolygonMesh.h>
 
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
@@ -21,6 +22,7 @@ static const std::string kDefaultRosbagTopicName = "grid_map";
 constexpr bool kDefaultVerbose = false;
 constexpr bool kDefaultLoadMeshOnStartup = false;
 static const std::string kDefaultMeshToLoadFileNamePLY = "mesh.ply";
+static const std::string kDefaultFrameIdMeshLoaded = "map";
 
 class MeshToGridMapConverter {
 
@@ -45,6 +47,10 @@ private:
 
   // Load mesh on startup
   bool loadMeshOnStartup();
+
+  // Converts a mesh to grid map and stores the result
+  bool meshToGridMap(const pcl::PolygonMesh &polygon_mesh, const std::string &mesh_frame_id,
+                     const uint64_t& time_stamp_nano_seconds);
 
   // Node Handles
   ros::NodeHandle nh_;
@@ -79,6 +85,7 @@ private:
   bool load_mesh_on_startup_;
   std::string mesh_to_load_file_path_;
   std::string mesh_to_load_file_name_;
+  std::string frame_id_mesh_loaded_;
 
 };
 

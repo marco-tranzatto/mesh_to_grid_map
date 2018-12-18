@@ -68,7 +68,6 @@ add_library(${PROJECT_NAME}_core
 ## Declare cpp executables
 add_executable(${PROJECT_NAME}
   src/${PROJECT_NAME}_node.cpp
-  src/mesh_to_grid_map_node.cpp
 )
 
 ## Specify libraries to link executable targets against
